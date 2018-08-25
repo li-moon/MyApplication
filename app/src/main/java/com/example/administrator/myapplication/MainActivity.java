@@ -2,6 +2,7 @@ package com.example.administrator.myapplication;
 
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -51,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
 //        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -117,6 +118,10 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent intent=new Intent(MainActivity.this,StockDetailActivity.class);
+            String data = "switch to new activity!";
+            intent.putExtra("extra_data", data);
+            startActivity(intent);
             return true;
         }
         else if(id == R.id.action_delete){
@@ -125,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
 
             for (String selectedId : SelectedStockItems_){
                 StockIds_.remove(selectedId);
-                TableLayout table = (TableLayout)findViewById(R.id.stock_table);
+                TableLayout table = findViewById(R.id.stock_table);
                 int count = table.getChildCount();
                 for (int i = 1; i < count; i++){
                     TableRow row = (TableRow)table.getChildAt(i);
@@ -170,6 +175,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public TreeMap<String, Stock> sinaResponseToStocks(String response){
+
+        TextView textView = findViewById(R.id.textView_log);
+        textView.setText(response.toString());
         response = response.replaceAll("\n", "");
         String[] stocks = response.split(";");
 
@@ -224,10 +232,12 @@ public class MainActivity extends AppCompatActivity {
         return stockMap;
     }
 
+
     public void querySinaStocks(String list){
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
-        String url ="http://hq.sinajs.cn/list=" + list;
+        //String url ="http://hq.sinajs.cn/list=" + list;
+        String url ="http://quotes.money.163.com/service/chddata.html?code=1000023&start=20180514&end=20180814&fields=TCLOSE;HIGH;LOW;TOPEN;CHG;PCHG;VOTURNOVER;VATURNOVER;TCAP;MCAP";
         //http://hq.sinajs.cn/list=sh600000,sh600536
 
         // Request a string response from the provided URL.
@@ -235,7 +245,13 @@ public class MainActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        updateStockListView(sinaResponseToStocks(response));
+                        String str = null;
+                        try{
+                            str = new String(response.getBytes("ISO-8859-1"),"GBK");
+                        }catch(java.io.UnsupportedEncodingException e){
+                            e.printStackTrace();
+                        }
+                        updateStockListView(sinaResponseToStocks(str));
                     }
                 },
                 new Response.ErrorListener() {
@@ -257,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void addStock(View view) {
-        EditText editText = (EditText) findViewById(R.id.editText_stockId);
+        EditText editText = findViewById(R.id.editText_stockId);
         String stockId = editText.getText().toString();
         if(stockId.length() != 6)
             return;
@@ -319,7 +335,7 @@ public class MainActivity extends AppCompatActivity {
 //        list.setAdapter(adapter);
 
         // Table
-        TableLayout table = (TableLayout)findViewById(R.id.stock_table);
+        TableLayout table = findViewById(R.id.stock_table);
         table.setStretchAllColumns(true);
         table.setShrinkAllColumns(true);
         table.removeAllViews();
@@ -368,7 +384,7 @@ public class MainActivity extends AppCompatActivity {
                     changeId = R.id.stock_chuang_change;
                 }
 
-                TextView indexText = (TextView)findViewById(indexId);
+                TextView indexText = findViewById(indexId);
                 indexText.setText(stock.now_);
                 int color = Color.BLACK;
                 if(dIncrease > 0) {
@@ -379,7 +395,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 indexText.setTextColor(color);
 
-                TextView changeText = (TextView)findViewById(changeId);
+                TextView changeText = findViewById(changeId);
                 changeText.setText(change);
 
                 continue;

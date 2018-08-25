@@ -2,7 +2,8 @@
     <string name="app_name">My Application</string>
 
     // Localized
-    //<string name="action_settings">设置</string>
+    //
+    <string name="action_settings">设置</string>
     <string name="action_delete">删除</string>
     <string name="button_add_label">添加</string>
     <string name="stock_name_title">名称</string>
