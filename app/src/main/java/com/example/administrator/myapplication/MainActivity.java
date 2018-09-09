@@ -10,6 +10,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Menu;
@@ -46,7 +47,14 @@ public class MainActivity extends AppCompatActivity {
     private final static String ChuangIndex = "sz399006";
     private final static String StockIdsKey_ = "StockIds";
     private final static int StockLargeTrade_ = 1000000;
+    private static GetSinaStock getSina = new GetSinaStock();
 
+    Response.Listener<String> msinalistener = new Response.Listener<String>() {
+        @Override
+        public void onResponse(String response) {
+            updateStockListView(sinaResponseToStocks(response));
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -162,26 +170,17 @@ public class MainActivity extends AppCompatActivity {
         editor.commit();
     }
 
-    // 浦发银行,15.06,15.16,15.25,15.27,14.96,15.22,15.24,205749026,3113080980,
-    // 51800,15.22,55979,15.21,1404740,15.20,1016176,15.19,187800,15.18,300,15.24,457700,15.25,548900,15.26,712266,15.27,1057960,15.28,2015-09-10,15:04:07,00
-    public class Stock {
-        public String id_, name_;
-        public String open_, yesterday_, now_, high_, low_;
-        public String b1_, b2_, b3_, b4_, b5_;
-        public String bp1_, bp2_, bp3_, bp4_, bp5_;
-        public String s1_, s2_, s3_, s4_, s5_;
-        public String sp1_, sp2_, sp3_, sp4_, sp5_;
-        public String time_;
-    }
 
-    public TreeMap<String, Stock> sinaResponseToStocks(String response){
+    public TreeMap<String, sinaStock> sinaResponseToStocks(String response){
 
-        TextView textView = findViewById(R.id.textView_log);
-        textView.setText(response.toString());
+        //TextView textView = findViewById(R.id.textView_log);
+        //System.out.println(response.toString());
+        //Log.v("debug", response.toString());
+        //textView.setText(response.toString());
         response = response.replaceAll("\n", "");
         String[] stocks = response.split(";");
 
-        TreeMap<String, Stock> stockMap = new TreeMap();
+        TreeMap<String, sinaStock> stockMap = new TreeMap();
         for(String stock : stocks) {
             String[] leftRight = stock.split("=");
             if (leftRight.length < 2)
@@ -195,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
             if (left.isEmpty())
                 continue;
 
-            Stock stockNow = new Stock();
+            sinaStock stockNow = new sinaStock();
             stockNow.id_ = left.split("_")[2];
 
             String[] values = right.split(",");
@@ -232,44 +231,13 @@ public class MainActivity extends AppCompatActivity {
         return stockMap;
     }
 
-
-    public void querySinaStocks(String list){
-        // Instantiate the RequestQueue.
-        RequestQueue queue = Volley.newRequestQueue(this);
-        //String url ="http://hq.sinajs.cn/list=" + list;
-        String url ="http://quotes.money.163.com/service/chddata.html?code=1000023&start=20180514&end=20180814&fields=TCLOSE;HIGH;LOW;TOPEN;CHG;PCHG;VOTURNOVER;VATURNOVER;TCAP;MCAP";
-        //http://hq.sinajs.cn/list=sh600000,sh600536
-
-        // Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        String str = null;
-                        try{
-                            str = new String(response.getBytes("ISO-8859-1"),"GBK");
-                        }catch(java.io.UnsupportedEncodingException e){
-                            e.printStackTrace();
-                        }
-                        updateStockListView(sinaResponseToStocks(str));
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                    }
-                });
-
-        queue.add(stringRequest);
-    }
-
     private void refreshStocks(){
         String ids = "";
         for (String id : StockIds_){
             ids += id;
             ids += ",";
         }
-        querySinaStocks(ids);
+        getSina.querySinaStocks(this,ids,msinalistener);
     }
 
     public void addStock(View view) {
@@ -302,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
 //        notifyMgr.notify(id, nBuilder.build());
     }
 
-    public void updateStockListView(TreeMap<String, Stock> stockMap){
+    public void updateStockListView(TreeMap<String, sinaStock> stockMap){
 //        String stock_name = getResources().getString(R.string.stock_name);
 //        String stock_id = getResources().getString(R.string.stock_id);
 //        String stock_now = getResources().getString(R.string.stock_now);
@@ -359,8 +327,8 @@ public class MainActivity extends AppCompatActivity {
         rowTitle.addView(increaseTitle);
         table.addView(rowTitle);
 //
-        Collection<Stock> stocks = stockMap.values();
-        for(Stock stock : stocks)
+        Collection<sinaStock> stocks = stockMap.values();
+        for(sinaStock stock : stocks)
         {
             if(stock.id_.equals(ShIndex) || stock.id_.equals(SzIndex) || stock.id_.equals(ChuangIndex)){
                 Double dNow = Double.parseDouble(stock.now_);
@@ -471,13 +439,16 @@ public class MainActivity extends AppCompatActivity {
                     ViewGroup group = (ViewGroup) v;
                     ViewGroup nameId = (ViewGroup) group.getChildAt(0);
                     TextView idText = (TextView) nameId.getChildAt(1);
-                    if (SelectedStockItems_.contains(idText.getText().toString())) {
-                        v.setBackgroundColor(BackgroundColor_);
-                        SelectedStockItems_.remove(idText.getText().toString());
-                    } else {
-                        v.setBackgroundColor(HighlightColor_);
-                        SelectedStockItems_.add(idText.getText().toString());
-                    }
+                    Intent intent=new Intent(MainActivity.this,StockDetailActivity.class);
+                    intent.putExtra("extra_data", idText.getText().toString());
+                    startActivity(intent);
+//                    if (SelectedStockItems_.contains(idText.getText().toString())) {
+//                        v.setBackgroundColor(BackgroundColor_);
+//                        SelectedStockItems_.remove(idText.getText().toString());
+//                    } else {
+//                        v.setBackgroundColor(HighlightColor_);
+//                        SelectedStockItems_.add(idText.getText().toString());
+//                    }
                 }
             });
 
